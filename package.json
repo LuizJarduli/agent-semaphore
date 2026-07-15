@@ -4,6 +4,10 @@
   "description": "Multiplatform agent semaphore tool playing audio alerts and managing lifecycle hooks",
   "main": "./dist/index.js",
   "type": "module",
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "bin": {
     "signalme": "./dist/index.js"
   },
