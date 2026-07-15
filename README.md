@@ -17,9 +17,30 @@ SignalMe works as a centralized registry and sound player utility:
 
 ---
 
-## Detailed Local Setup (Using `npm link`)
+## Installation
 
-To develop, run, and link `signalme` locally on your system, follow this guide:
+Install `signalme` globally using npm:
+
+```bash
+npm install -g @lugalokinho/signalme
+```
+
+### Getting Started
+
+1. Initialize the configuration directory and register native OS sound alerts:
+   ```bash
+   signalme init
+   ```
+2. Verify the installation by playing a success chime:
+   ```bash
+   signalme play success
+   ```
+
+---
+
+## Local Development Setup
+
+If you want to contribute or build/test changes locally on your system, follow this guide:
 
 ### Step 1: Clone and Navigate to Directory
 Ensure you are in the project root folder:
@@ -28,29 +49,21 @@ cd side-projects/agent-semaphore
 ```
 
 ### Step 2: Install Node Dependencies
-Install development tools and libraries:
 ```bash
 npm install
 ```
 
 ### Step 3: Compile TypeScript Code
-Transpile the source code into production JavaScript in the `dist` folder:
 ```bash
 npm run build
 ```
 
 ### Step 4: Create Global Link (`npm link`)
-To register the `signalme` CLI executable globally in your terminal shell, run:
+Register the local build executable globally:
 ```bash
 npm link
 ```
-> **How this works:** `npm link` reads the `bin` field in `package.json` and creates a symlink in your global Node `bin` folder pointing to `dist/index.js` inside this project. Now, typing `signalme` in any directory will execute your local build!
-
-### Step 5: Verify the Installation
-Open a **new terminal tab** and run:
-```bash
-signalme --help
-```
+Now, typing `signalme` in any directory will run your local development build.
 
 ---
 
