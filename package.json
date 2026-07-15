@@ -1,5 +1,5 @@
 {
-  "name": "signalme",
+  "name": "@lugalokinho/signalme",
   "version": "1.0.0",
   "description": "Multiplatform agent semaphore tool playing audio alerts and managing lifecycle hooks",
   "main": "./dist/index.js",
@@ -17,7 +17,7 @@
     "prebuild": "rm -rf ./dist",
     "copy:assets": "mkdir -p dist/assets && cp -r src/assets/* dist/assets/ 2>/dev/null || true",
     "bump:version": "npx standard-version && git push --follow-tags origin main",
-    "publish:package": "npm run build && npm run bump:version && npm publish"
+    "publish:package": "npm run build && npm run bump:version && npm publish --access=public"
   },
   "dependencies": {
     "chalk": "^5.3.0",
