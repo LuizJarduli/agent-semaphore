@@ -147,6 +147,27 @@ Example configuration using custom local files:
 
 ---
 
+## Publishing to npm
+
+This project uses `standard-version` for semantic versioning, release tag management, and changelog auto-generation.
+
+To publish a new release:
+1. Ensure your terminal session is authenticated to npm:
+   ```bash
+   npm login
+   ```
+2. Run the publication script:
+   ```bash
+   npm run publish:package
+   ```
+   *What this script does:*
+   * Runs `npm run build` to compile TypeScript to `dist/`.
+   * Runs `npx standard-version` to bump the version, generate/update `CHANGELOG.md`, and commit/tag the version bump.
+   * Pushes the version tags to GitHub (`origin main`).
+   * Publishes the package to the npm registry.
+
+---
+
 ## Troubleshooting
 
 ### 1. `command not found: signalme`
