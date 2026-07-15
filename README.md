@@ -1,91 +1,169 @@
 # SignalMe 🚦
 
-A lightweight, zero-dependency, cross-platform CLI semaphore tool for developer agent workflows. It triggers visual alerts, voice messages, and audio chimes to signal when your AI agents (Claude Code, Cursor Composer, Antigravity, or generic shell scripts) complete their tasks or require manual attention/input.
-
-## Features
-
-- **Multiplatform Sound Engine:** Plays alerts headlessly using native tools (`afplay` on macOS, `ffplay` on Linux, PowerShell on Windows).
-- **Auto-Config Driver for Claude Code:** Updates `~/.claude/settings.json` automatically to wire hooks for `Stop` and `PermissionRequest` events.
-- **Auto-Config Driver for Cursor:** Alters User settings (`settings.json`) to enable integrated terminal bells and alerts.
-- **Antigravity CLI Support:** Integrates seamlessly via shell command wrapping functions.
+SignalMe is a lightweight, zero-dependency, cross-platform developer semaphore tool for AI agent workflows. It triggers visual alerts and audio chimes to notify you when your agentic tools (Claude Code, Cursor Composer, Antigravity, or generic shell scripts) complete their tasks or pause to ask for input/permissions.
 
 ---
 
-## Installation & CLI Setup
+## Architecture & How It Works
 
-To install and use `signalme` globally on your machine:
+SignalMe works as a centralized registry and sound player utility:
 
-1. Clone or navigate to the repository directory:
-   ```bash
-   cd side-projects/agent-semaphore
-   ```
-2. Build the TypeScript files:
-   ```bash
-   npm run build
-   ```
-3. Link the package globally to your system:
-   ```bash
-   npm link
-   ```
-
-Now, the `signalme` CLI is available globally in any terminal session.
+1.  **State Registry:** Configurations are stored locally in your home directory at `~/.signalme/config.json`. This registry holds paths to your success, error, and attention sounds.
+2.  **Platform Audio Players:** Spawns native child-processes to play audio without installing heavy native C++ bindings or node libraries:
+    *   **macOS:** Spawns native `afplay`.
+    *   **Linux:** Spawns `ffplay` with headless configuration flags.
+    *   **Windows:** Spawns PowerShell `System.Media.SoundPlayer` (completely headless) with a fallback to Windows Media Player CLI.
+3.  **Hooks Integration:** Dynamically injects script executions into agent settings (like Claude Code's lifecycle hooks and Cursor's terminal configs) to automate alerts.
 
 ---
 
-## CLI Usage
+## Detailed Local Setup (Using `npm link`)
 
-### 1. Initialize Settings
-Sets up your configuration file at `~/.signalme/config.json` with platform-specific native sound mappings:
+To develop, run, and link `signalme` locally on your system, follow this guide:
+
+### Step 1: Clone and Navigate to Directory
+Ensure you are in the project root folder:
+```bash
+cd side-projects/agent-semaphore
+```
+
+### Step 2: Install Node Dependencies
+Install development tools and libraries:
+```bash
+npm install
+```
+
+### Step 3: Compile TypeScript Code
+Transpile the source code into production JavaScript in the `dist` folder:
+```bash
+npm run build
+```
+
+### Step 4: Create Global Link (`npm link`)
+To register the `signalme` CLI executable globally in your terminal shell, run:
+```bash
+npm link
+```
+> **How this works:** `npm link` reads the `bin` field in `package.json` and creates a symlink in your global Node `bin` folder pointing to `dist/index.js` inside this project. Now, typing `signalme` in any directory will execute your local build!
+
+### Step 5: Verify the Installation
+Open a **new terminal tab** and run:
+```bash
+signalme --help
+```
+
+---
+
+## Local Development Workflow
+
+If you want to edit the code and test changes in real-time, rebuilding constantly can be tedious. Use these techniques:
+
+### Live Rebuilding (Watch Mode)
+Open a terminal in the background and run the watch compiler:
+```bash
+npx tsc --watch
+```
+As you modify `.ts` files in `src/`, they will automatically compile to `dist/`, immediately updating the behavior of your global `signalme` command!
+
+### Testing via TSX (Without Building)
+If you want to run the TypeScript files directly without compiling them first, use `npx tsx`:
+```bash
+npx tsx src/index.ts play success
+```
+
+---
+
+## CLI Command Reference
+
+### `signalme init`
+Initializes the `~/.signalme` configuration folder, creates `config.json` with default OS sounds, and maps placeholders:
 ```bash
 signalme init
 ```
 
-### 2. Manual Sound Playback
-Play registered system sounds immediately:
+### `signalme play <type>`
+Triggers immediate playback of one of your registered sound classes:
 ```bash
-signalme play success       # Success sound (e.g., Glass)
-signalme play error         # Error sound (e.g., Basso)
-signalme play attention     # Action Required (e.g., Ping/Beep)
+signalme play success       # Task success sound
+signalme play error         # Task error/failure sound
+signalme play attention     # Action Required / Stopped prompt sound
 ```
 
-### 3. Configure Vendor Agent Tools
+### `signalme enable <vendor>` / `signalme disable <vendor>`
+Wires automated hooks for specific agent environments:
 
-*   **Claude Code CLI:**
-    *   **Enable:** Injects hooks so Claude plays a sound when finished or when requesting tool permissions:
-        ```bash
-        signalme enable --claude
-        ```
-    *   **Disable:** Cleanly removes all registered hook overrides:
-        ```bash
-        signalme disable --claude
-        ```
+*   **Claude Code:**
+    ```bash
+    signalme enable --claude
+    ```
+    *   *What it does:* Reads your global `~/.claude/settings.json` file, parses the JSON structure, and cleanly inserts hook triggers for `Stop` (success) and `PermissionRequest` (attention) events without disturbing other hooks.
+    *   *To undo:* `signalme disable --claude`
 
 *   **Cursor IDE:**
-    *   **Enable:** Sets up the integrated terminal visual/audible bell configs:
-        ```bash
-        signalme enable --cursor
-        ```
-    *   **Disable:** Cleans up the Cursor settings file:
-        ```bash
-        signalme disable --cursor
-        ```
+    ```bash
+    signalme enable --cursor
+    ```
+    *   *What it does:* Injects `"terminal.integrated.bellToAlert": true` and `"terminal.integrated.enableBell": true` into your global Cursor user `settings.json` file so terminal bells automatically bubble up system notifications.
+    *   *Note:* Ensure "Play sound on agent completion" is turned on under *Cursor Settings (Cmd+Shift+J) -> Features -> Composer*.
+    *   *To undo:* `signalme disable --cursor`
 
-*   **Antigravity & General Shell Scripts:**
-    *   Register the driver state and print the shell wrapper snippet:
+*   **Antigravity / Custom Shell Runs:**
+    ```bash
+    signalme enable --antigravity
+    ```
+    *   *What it does:* Registers `antigravity` in the local config file and prints a reusable shell wrapper function `sem()` that you can add to your `~/.zshrc` or `~/.bashrc`:
         ```bash
-        signalme enable --antigravity
+        sem() {
+            "$@"
+            local status=$?
+            if [ $status -eq 0 ]; then
+                signalme play success
+            else
+                signalme play error
+            fi
+            return $status
+        }
         ```
+    *   *Usage:* Prefix any long-running agent command with `sem`, e.g., `sem agy "fix typescript compiler errors in src/"`.
 
 ---
 
-## Technical Stack
+## Customizing Sound Effects
 
-- **Runtime:** Node.js (ES Modules, Type: Module)
-- **Language:** TypeScript
-- **Styling & CLI output:** `chalk` and `figlet`
+To change the sounds played by the CLI, edit your local settings registry at `~/.signalme/config.json`.
+
+Example configuration using custom local files:
+```json
+{
+  "version": "1.0.0",
+  "sounds": {
+    "success": "/Users/yourname/Music/chime.mp3",
+    "error": "/Users/yourname/Music/alarm.mp3",
+    "attention": "/Users/yourname/Downloads/misc/buzina-palhaco.mp3"
+  },
+  "enabledDrivers": ["claude"]
+}
+```
 
 ---
 
-## License
+## Troubleshooting
 
-MIT
+### 1. `command not found: signalme`
+Ensure your npm global bin folder is in your shell's `$PATH`. You can check where npm installs global binaries by running:
+```bash
+npm prefix -g
+```
+Ensure that path's `bin/` subfolder is added to your environment path.
+
+### 2. File Permissions
+If you encounter permission errors running `npm link`, you may need to run it with admin privileges depending on your Node configuration:
+```bash
+sudo npm link
+```
+Alternatively, configure npm to install global packages under your home directory to avoid `sudo` requirements.
+
+### 3. Sound Not Playing
+*   **macOS:** Ensure you can run `afplay` manually in terminal.
+*   **Linux:** Ensure `ffplay` is installed on your system (usually comes with the `ffmpeg` package). Run `sudo apt-get install ffmpeg` if missing.
+*   **Windows:** Verify PowerShell execution policies permit scripts if PowerShell execution fails.
